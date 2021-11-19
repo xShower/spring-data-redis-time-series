@@ -40,7 +40,7 @@ public class redisTest {
     private TimeSeriesOperations operations;
     private static final String host = "192.168.35.118";
     private static final int port = 7617;
-    private static final String key = "temperature:2:32";
+    private static final String key = "temperature:5:32";
 
     List<String> keys = new ArrayList<String>(){{
         add(key);
@@ -143,7 +143,7 @@ public class redisTest {
     @Test
     public void create() {
         operations.create(key, new TimeSeriesOptions()
-                .retention(50000)
+                .retention(2*24*68*68*1000)
                 .labels(Label.just("area", "350301"), Label.just("year", "2021")));
     }
 
@@ -164,12 +164,13 @@ public class redisTest {
 
     @Test
     public void add() throws Exception {
-        delKey();
-
+        // delKey();
+        int count = 15000;
         start = System.currentTimeMillis();
-        System.out.println("{\"timestamp\":"+ start +",\"value\":"+ 26 +"}");
-        operations.add(Sample.just(key).put(start, 26 ));
-        end = System.currentTimeMillis();
+        for (int i = 0; i < count; i++) {
+            end = System.currentTimeMillis();
+            operations.add(Sample.just(key).put(end, 1));
+        }
 
     }
 
@@ -190,17 +191,16 @@ public class redisTest {
 
     @Test
     public void incrby() throws Exception {
-        int count = 1000;
+        int count = 15000;
         for (int i = 0; i < count; i++) {
             long timestamp = System.currentTimeMillis();
             start = i == 0 ? timestamp : start;
             end = timestamp;
-            System.out.println("{\"timestamp\":"+ timestamp +",\"value\":"+ i +"}");
             operations.incrby(key, 1, timestamp);
         }
 
         // range();
-        revRange();
+        // revRange();
         // mGet();
     }
 
@@ -224,14 +224,17 @@ public class redisTest {
     @Test
     public void range() {
         List<Value> resultList = operations
-                .range(key, start, end, new RangeOptions().aggregationType(Aggregation.RANGE, 1000));
+                .range(key, 1637307524565L, 1637307542236L, new RangeOptions().aggregationType(Aggregation.SUM, 1000));
         resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +"}"));
+
+        System.out.println(resultList.stream().mapToDouble(Value::getValue).sum());
     }
 
     @Test
     public void revRange() {
+        System.out.println("ts.revrange temperature:2:33 "+ start +" "+ end +" AGGREGATION range 5");
         List<Value> resultList = operations
-                .revRange(key, start, end, new RangeOptions().aggregationType(Aggregation.SUM, 5));
+                .revRange(key, start, end, new RangeOptions().aggregationType(Aggregation.RANGE, 5));
         resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +"}"));
     }
 

@@ -15,7 +15,7 @@ import java.util.List;
 public class TimeSeriesOptions {
 
     private long retention;
-    private boolean compressed = true;
+    private boolean compressed = false;
     private DuplicatePolicy duplicatePolicy;
     private Label[] labels;
 
@@ -42,7 +42,7 @@ public class TimeSeriesOptions {
         return this;
     }
 
-    public Object[] format(List<Object> options) {
+    public Object[] format(List<Object> options, boolean add) {
         if (this.retention > 0L) {
             options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
         }
@@ -52,7 +52,7 @@ public class TimeSeriesOptions {
         }
 
         if (this.duplicatePolicy != null) {
-            // args.add(this.isAdd ? Keywords.ON_DUPLICATE : Keywords.DUPLICATE_POLICY);
+            options.add(add ? Keywords.ON_DUPLICATE.name() : Keywords.DUPLICATE_POLICY.name());
             options.add(this.duplicatePolicy.name());
         }
 

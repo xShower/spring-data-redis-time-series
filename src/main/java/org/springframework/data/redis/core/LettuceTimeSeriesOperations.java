@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.decode.TimeSeriesDecoder;
 import org.springframework.data.redis.core.options.RangeOptions;
 import org.springframework.data.redis.core.options.TimeSeriesOptions;
 import org.springframework.data.redis.core.protocol.Aggregation;
+import org.springframework.data.redis.core.protocol.DuplicatePolicy;
 import org.springframework.data.redis.core.protocol.Keywords;
 import org.springframework.data.redis.core.protocol.entity.Sample;
 import org.springframework.data.redis.core.protocol.entity.TimeSeries;
@@ -34,7 +35,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public void create(K key, TimeSeriesOptions options) {
-        Object[] objects = options.format(new ArrayList<>());
+        Object[] objects = options.format(new ArrayList<>(), false);
         byte[] rawKey = rawKey(key);
 
         execute(connection -> {
@@ -58,7 +59,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
     @Override
     public void alter(K key, TimeSeriesOptions options) {
         byte[] rawKey = rawKey(key);
-        Object[] objects = options.format(new ArrayList<>());
+        Object[] objects = options.format(new ArrayList<>(), false);
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.alter(new String(rawKey), objects);
@@ -68,18 +69,17 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public Long add(Sample sample) {
-        return add(sample, null);
+        return add(sample, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
     }
 
     @Override
     public Long add(Sample sample, TimeSeriesOptions options) {
         byte[] rawKey = rawKey(sample.getKey());
-        byte[] rawValue = rawValue(sample.getValue());
-        Object[] objects = Objects.isNull(options) ? new Object[]{} : options.format(new ArrayList<>());
+        Object[] objects = Objects.isNull(options) ? new Object[]{} : options.format(new ArrayList<>(), true);
 
         return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            return commands.add(new String(rawKey), sample.getTimestamp(), new String(rawValue), objects);
+            return commands.add(new String(rawKey), sample.getTimestamp(), sample.getValue(), objects);
         }, true);
     }
 
@@ -105,7 +105,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public void incrby(K key, V value, Long timestamp) {
-        incrby(key, value, timestamp, new TimeSeriesOptions());
+        incrby(key, value, timestamp, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
     }
 
     @Override
@@ -115,10 +115,10 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             objects.add(Keywords.TIMESTAMP.name());
             objects.add(timestamp);
         }
-        Object[] opts = options.format(objects);
+        Object[] opts = options.format(objects, false);
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            commands.incrby(new String(rawKey(key)), Long.parseLong(value.toString()), opts);
+            commands.incrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
             return null;
         }, true);
     }
@@ -140,10 +140,10 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             objects.add(Keywords.TIMESTAMP.name());
             objects.add(timestamp);
         }
-        Object[] opts = options.format(objects);
+        Object[] opts = options.format(objects, false);
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            commands.decrby(new String(rawKey(key)), Long.parseLong(value.toString()), opts);
+            commands.decrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
             return null;
         }, true);
     }

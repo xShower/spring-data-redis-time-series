@@ -23,16 +23,16 @@ public interface TimeSeriesCommands extends Commands {
     void alter(String key, Object[] options);
 
     @Command("TS.ADD")
-    Long add(String key, long timestamp, String value, Object[] options);
+    Long add(String key, Long timestamp, Double value, Object[] options);
 
     @Command("TS.MADD")
     Long mAdd(Object[] item);
 
     @Command("TS.INCRBY")
-    void incrby(String key, Long value, Object[] options);
+    void incrby(String key, Double value, Object[] options);
 
     @Command("TS.DECRBY")
-    void decrby(String key, Long value, Object[] options);
+    void decrby(String key, Double value, Object[] options);
 
     @Command("TS.CREATERULE")
     void createRule(String sourceKey, String destKey, Object[] options);
