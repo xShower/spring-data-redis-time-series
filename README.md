@@ -5,7 +5,7 @@ spring-data-redis-time-series是一个基于springboot、lettuce的快速集成r
 # 使用方式
 在根目录想执行
 ```shell
-mvn install
+mvn clean install -Dmaven.test.skip=true
 ```
 然后在项目中引入
 ```xml
