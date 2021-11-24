@@ -43,7 +43,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public void create(K key, TimeSeriesOptions options) {
-        Object[] objects = options.create(new ArrayList<>());
+        Object[] objects = options.create();
         byte[] rawKey = rawKey(key);
 
         execute(connection -> {
@@ -68,7 +68,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
     @Override
     public void alter(K key, TimeSeriesOptions options) {
         byte[] rawKey = rawKey(key);
-        Object[] objects = options.alter(new ArrayList<>());
+        Object[] objects = options.alter();
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.alter(new String(rawKey), objects);
@@ -84,7 +84,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
     @Override
     public Long add(Sample sample, TimeSeriesOptions options) {
         byte[] rawKey = rawKey(sample.getKey());
-        Object[] objects = Objects.isNull(options) ? new Object[]{} : options.add(new ArrayList<>());
+        Object[] objects = Objects.isNull(options) ? new Object[]{} : options.add();
 
         return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
@@ -120,12 +120,8 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public void incrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
-        List<Object> objects = new ArrayList<>();
-        if (!Objects.isNull(timestamp)) {
-            objects.add(Keywords.TIMESTAMP.name());
-            objects.add(timestamp);
-        }
-        Object[] opts = options.incrby(objects);
+        options.timestamp(timestamp);
+        Object[] opts = options.incrby();
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.incrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
@@ -145,12 +141,8 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public void decrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
-        List<Object> objects = new ArrayList<>();
-        if (!Objects.isNull(timestamp)) {
-            objects.add(Keywords.TIMESTAMP.name());
-            objects.add(timestamp);
-        }
-        Object[] opts = options.incrby(objects);
+        options.timestamp(timestamp);
+        Object[] opts = options.incrby();
         execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.decrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
@@ -320,7 +312,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
 
     @Override
     public List<TimeSeries> mGet(RangeOptions options) {
-        Object[] opts = options.mGet(new ArrayList<>());
+        Object[] opts = options.mGet();
         List<Object> value = execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.mGet(opts);

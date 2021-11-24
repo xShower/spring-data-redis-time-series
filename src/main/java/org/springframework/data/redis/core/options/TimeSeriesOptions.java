@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.protocol.DuplicatePolicy;
 import org.springframework.data.redis.core.protocol.Keywords;
 import org.springframework.data.redis.core.protocol.entity.Label;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,7 +53,8 @@ public class TimeSeriesOptions {
         return this;
     }
 
-    public Object[] create(List<Object> options) {
+    public Object[] create() {
+        List<Object> options = new ArrayList<>();
         if (this.retention > 0L) {
             options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
         }
@@ -83,7 +85,8 @@ public class TimeSeriesOptions {
         return options.toArray();
     }
 
-    public Object[] add(List<Object> options) {
+    public Object[] add() {
+        List<Object> options = new ArrayList<>();
         if (this.retention > 0L) {
             options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
         }
@@ -115,7 +118,8 @@ public class TimeSeriesOptions {
         return options.toArray();
     }
 
-    public Object[] alter(List<Object> options) {
+    public Object[] alter() {
+        List<Object> options = new ArrayList<>();
         if (this.retention > 0L) {
             options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
         }
@@ -131,7 +135,8 @@ public class TimeSeriesOptions {
         return options.toArray();
     }
 
-    public Object[] incrby(List<Object> options) {
+    public Object[] incrby() {
+        List<Object> options = new ArrayList<>();
         if (this.timestamp > 0l) {
             options.add(Keywords.TIMESTAMP.name());
             options.add(timestamp);
@@ -159,21 +164,5 @@ public class TimeSeriesOptions {
             }
         }
         return options.toArray();
-    }
-
-    private List<Object> addCommon(List<Object> options) {
-        if (this.retention > 0L) {
-            options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
-        }
-
-        if (this.labels != null) {
-            options.add(Keywords.LABELS.name());
-
-            for(int i = 0; i < this.labels.length; ++i) {
-                Label label = this.labels[i];
-                options.add(KeyValue.just(label.getKey(), label.getValue()));
-            }
-        }
-        return options;
     }
 }

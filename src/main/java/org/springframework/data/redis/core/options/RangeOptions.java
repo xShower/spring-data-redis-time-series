@@ -172,7 +172,8 @@ public class RangeOptions {
         return options.toArray();
     }
 
-    public Object[] mGet(List<Object> options) {
+    public Object[] mGet() {
+        List<Object> options = new ArrayList<>();
 
         if (this.withLabels) {
             options.add(Keywords.WITHLABELS.name());

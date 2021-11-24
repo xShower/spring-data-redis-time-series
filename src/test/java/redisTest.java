@@ -43,7 +43,7 @@ public class redisTest {
     private static final String host = "47.111.95.99";
     private static final int port = 6389;
     private static final String password = "ylz#yhkj..2020";
-    private static final String key = "temperature:5:32";
+    private static final String key = "temperature:x:32";
 
     List<String> keys = new ArrayList<String>(){{
         add(key);
@@ -244,7 +244,7 @@ public class redisTest {
                         .vlsFilter(true)
                         .count(5)
                         .align(1)
-                        .aggregationType(Aggregation.COUNT, 1000));
+                        .aggregationType(Aggregation.COUNT, 5000));
 
         resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +"}"));
     }
@@ -258,7 +258,7 @@ public class redisTest {
                         .withLabels()
                         .count(5)
                         .align(1)
-                        .aggregationType(Aggregation.COUNT, 5)
+                        .aggregationType(Aggregation.COUNT, 5000)
                         .filters(Label.just("area", "350302"))
                 );
         System.out.println(resultList);
@@ -274,7 +274,7 @@ public class redisTest {
                         .withLabels()
                         .count(5)
                         .align(1)
-                        .aggregationType(Aggregation.COUNT, 5)
+                        .aggregationType(Aggregation.COUNT, 1000)
                         .filters(Label.just("area", "350302"))
                 );
         System.out.println(resultList);
@@ -295,7 +295,7 @@ public class redisTest {
 
     @Test
     public void info() {
-        Map info = operations.info(key, true);
+        Map info = operations.info(key);
         System.out.println(info);
     }
 
