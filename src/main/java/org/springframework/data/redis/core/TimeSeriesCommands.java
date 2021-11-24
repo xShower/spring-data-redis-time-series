@@ -16,8 +16,8 @@ public interface TimeSeriesCommands extends Commands {
     @Command("TS.CREATE")
     void create(String key, Object[] options);
 
-    @Command("TS.DEL")
-    void del(String key, long fromTimestamp, long toTimestamp);
+    //@Command("TS.DEL")
+    //void del(String key, long fromTimestamp, long toTimestamp);
 
     @Command("TS.ALTER")
     void alter(String key, Object[] options);
@@ -41,16 +41,16 @@ public interface TimeSeriesCommands extends Commands {
     void deleteRule(String sourceKey, String destKey);
 
     @Command("TS.RANGE")
-    List<Object> range(String key, long fromTimestamp, long toTimestamp, Object[] options);
+    List<Object> range(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.REVRANGE")
-    List<Object> revRange(String key, long fromTimestamp, long toTimestamp, Object[] options);
+    List<Object> revRange(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.MRANGE")
-    void mRange(String key, long fromTimestamp, long toTimestamp, Object[] options);
+    List<Object> mRange(Object fromTimestamp, Object toTimestamp, Object[] options);
 
-    @Command("TS.MREVRANG")
-    void mRevRange(String key, long fromTimestamp, long toTimestamp, Object[] options);
+    @Command("TS.MREVRANGE")
+    List<Object> mRevRange(Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.GET")
     List<Object> get(String key);

@@ -8,6 +8,7 @@ package org.springframework.data.redis.core.protocol;
 public enum Keywords {
     RETENTION,
     UNCOMPRESSED,
+    COMPRESSED,
     LABELS,
     ENCODING,
     CHUNK_SIZE,

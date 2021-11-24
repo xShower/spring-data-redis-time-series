@@ -1,5 +1,6 @@
 package org.springframework.data.redis.core.decode;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.protocol.entity.TimeSeries;
 import org.springframework.data.redis.core.protocol.entity.Value;
 
@@ -10,9 +11,21 @@ import java.util.*;
  * @Date: 2021/11/18
  * @Description:
  */
-public class TimeSeriesDecoder implements Decoder<Object, List<TimeSeries>> {
-    private LabelDecoder labelDecoder = new LabelDecoder();
-    private SampleDecoder sampleDecoder = new SampleDecoder();
+public class TimeSeriesDecoder extends AbstractDecoder<Object, List<TimeSeries>> {
+    private LabelDecoder labelDecoder;
+    private SampleDecoder sampleDecoder;
+
+    public TimeSeriesDecoder(RedisTemplate redisTemplate) {
+        super(redisTemplate);
+    }
+
+    public void setLabelDecoder(LabelDecoder labelDecoder) {
+        this.labelDecoder = labelDecoder;
+    }
+
+    public void setSampleDecoder(SampleDecoder sampleDecoder) {
+        this.sampleDecoder = sampleDecoder;
+    }
 
     @Override
     public List<TimeSeries> decode(Object key, Object value) {
@@ -27,7 +40,15 @@ public class TimeSeriesDecoder implements Decoder<Object, List<TimeSeries>> {
             List<Value> vls = new ArrayList<>();
             String iKey = new String((byte[])o.get(0));
             TimeSeries series = new TimeSeries(iKey);
-            // series.labels(this.labelDecoder.decode(null, o.get(1)));
+            // todo label decode
+            if (!Objects.isNull(o.get(1))) {
+                List labels = (List)o.get(1);
+                List data = new ArrayList(labels.size());
+                for (Object label : labels) {
+                    data.add(this.labelDecoder.decode(null, label));
+                }
+                series.labels(data);
+            }
             List<Object> m = (List)o.get(2);
             if (!Objects.isNull(m) && m.size() > 0) {
                 if (m.get(0) instanceof List) {

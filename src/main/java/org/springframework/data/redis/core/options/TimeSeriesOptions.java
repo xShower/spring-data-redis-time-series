@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.protocol.Keywords;
 import org.springframework.data.redis.core.protocol.entity.Label;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @Auther: syh
@@ -15,20 +16,29 @@ import java.util.List;
 public class TimeSeriesOptions {
 
     private long retention;
-    private boolean compressed = false;
+    private long timestamp;
+    private Boolean compressed;
+    private int chunkSize;
     private DuplicatePolicy duplicatePolicy;
     private Label[] labels;
-
-    public TimeSeriesOptions() {}
-
 
     public TimeSeriesOptions retention(long retention) {
         this.retention = retention;
         return this;
     }
 
+    public TimeSeriesOptions timestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     public TimeSeriesOptions compressed(boolean compressed) {
         this.compressed = compressed;
+        return this;
+    }
+
+    public TimeSeriesOptions chunkSize(int chunkSize) {
+        this.chunkSize = chunkSize;
         return this;
     }
 
@@ -42,17 +52,23 @@ public class TimeSeriesOptions {
         return this;
     }
 
-    public Object[] format(List<Object> options, boolean add) {
+    public Object[] create(List<Object> options) {
         if (this.retention > 0L) {
             options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
         }
 
-        if (!this.compressed) {
-            options.add(Keywords.UNCOMPRESSED.name());
+        if (!Objects.isNull(this.compressed)) {
+            options.add(Keywords.ENCODING.name());
+            options.add(this.compressed ? Keywords.COMPRESSED.name():Keywords.UNCOMPRESSED.name());
+        }
+
+        if (this.chunkSize > 0) {
+            options.add(Keywords.CHUNK_SIZE.name());
+            options.add(this.chunkSize);
         }
 
         if (this.duplicatePolicy != null) {
-            options.add(add ? Keywords.ON_DUPLICATE.name() : Keywords.DUPLICATE_POLICY.name());
+            options.add(Keywords.DUPLICATE_POLICY.name());
             options.add(this.duplicatePolicy.name());
         }
 
@@ -65,5 +81,99 @@ public class TimeSeriesOptions {
             }
         }
         return options.toArray();
+    }
+
+    public Object[] add(List<Object> options) {
+        if (this.retention > 0L) {
+            options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
+        }
+
+        if (!Objects.isNull(this.compressed)) {
+            options.add(Keywords.ENCODING.name());
+            options.add(this.compressed ? Keywords.COMPRESSED.name():Keywords.UNCOMPRESSED.name());
+        }
+
+        if (this.chunkSize > 0) {
+            options.add(Keywords.CHUNK_SIZE.name());
+            options.add(this.chunkSize);
+        }
+
+        if (this.duplicatePolicy != null) {
+            options.add(Keywords.ON_DUPLICATE.name());
+            options.add(this.duplicatePolicy.name());
+        }
+
+        if (this.labels != null) {
+            options.add(Keywords.LABELS.name());
+
+            for(int i = 0; i < this.labels.length; ++i) {
+                Label label = this.labels[i];
+                options.add(KeyValue.just(label.getKey(), label.getValue()));
+            }
+        }
+
+        return options.toArray();
+    }
+
+    public Object[] alter(List<Object> options) {
+        if (this.retention > 0L) {
+            options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
+        }
+
+        if (this.labels != null) {
+            options.add(Keywords.LABELS.name());
+
+            for(int i = 0; i < this.labels.length; ++i) {
+                Label label = this.labels[i];
+                options.add(KeyValue.just(label.getKey(), label.getValue()));
+            }
+        }
+        return options.toArray();
+    }
+
+    public Object[] incrby(List<Object> options) {
+        if (this.timestamp > 0l) {
+            options.add(Keywords.TIMESTAMP.name());
+            options.add(timestamp);
+        }
+
+        if (this.retention > 0L) {
+            options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
+        }
+
+        if (!Objects.isNull(this.compressed) && !this.compressed) {
+            options.add(Keywords.UNCOMPRESSED.name());
+        }
+
+        if (this.chunkSize > 0) {
+            options.add(Keywords.CHUNK_SIZE.name());
+            options.add(this.chunkSize);
+        }
+
+        if (this.labels != null) {
+            options.add(Keywords.LABELS.name());
+
+            for(int i = 0; i < this.labels.length; ++i) {
+                Label label = this.labels[i];
+                options.add(KeyValue.just(label.getKey(), label.getValue()));
+            }
+        }
+        return options.toArray();
+    }
+
+    private List<Object> addCommon(List<Object> options) {
+        if (this.retention > 0L) {
+            options.add(KeyValue.just(Keywords.RETENTION.name(), String.valueOf(this.retention)));
+        }
+
+        if (this.labels != null) {
+            options.add(Keywords.LABELS.name());
+
+            for(int i = 0; i < this.labels.length; ++i) {
+                Label label = this.labels[i];
+                options.add(KeyValue.just(label.getKey(), label.getValue()));
+            }
+        }
+        return options;
     }
 }

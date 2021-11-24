@@ -18,8 +18,10 @@ import org.springframework.data.redis.core.TimeSeriesOperations;
 import org.springframework.data.redis.core.options.RangeOptions;
 import org.springframework.data.redis.core.options.TimeSeriesOptions;
 import org.springframework.data.redis.core.protocol.Aggregation;
+import org.springframework.data.redis.core.protocol.DuplicatePolicy;
 import org.springframework.data.redis.core.protocol.entity.Label;
 import org.springframework.data.redis.core.protocol.entity.Sample;
+import org.springframework.data.redis.core.protocol.entity.TimeSeries;
 import org.springframework.data.redis.core.protocol.entity.Value;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -38,8 +40,9 @@ public class redisTest {
 
     private RedisTemplate<String, Object> template;
     private TimeSeriesOperations operations;
-    private static final String host = "192.168.35.118";
-    private static final int port = 7617;
+    private static final String host = "47.111.95.99";
+    private static final int port = 6389;
+    private static final String password = "ylz#yhkj..2020";
     private static final String key = "temperature:5:32";
 
     List<String> keys = new ArrayList<String>(){{
@@ -106,7 +109,7 @@ public class redisTest {
 
         RedisStandaloneConfiguration redisStandaloneConfiguration=new RedisStandaloneConfiguration();
         redisStandaloneConfiguration.setHostName(host);
-        redisStandaloneConfiguration.setPassword("");
+        redisStandaloneConfiguration.setPassword(password);
         redisStandaloneConfiguration.setDatabase(0);
         redisStandaloneConfiguration.setPort(port);
 
@@ -144,7 +147,10 @@ public class redisTest {
     public void create() {
         operations.create(key, new TimeSeriesOptions()
                 .retention(2*24*68*68*1000)
-                .labels(Label.just("area", "350301"), Label.just("year", "2021")));
+                        .compressed(true)
+                        .chunkSize(8192)
+                        .duplicatePolicy(DuplicatePolicy.SUM)
+                .labels(Label.just("app_id", "350301"), Label.just("year", "2021")));
     }
 
     @Test
@@ -159,44 +165,44 @@ public class redisTest {
 
     @Test
     public void alter() {
-        operations.alter(key, new TimeSeriesOptions().labels(Label.just("area", "350302")));
+        operations.alter(key, new TimeSeriesOptions().retention(1*24*60*60*1000).labels(Label.just("area", "350302")));
     }
 
     @Test
     public void add() throws Exception {
         // delKey();
-        int count = 15000;
+        int count = 10;
         start = System.currentTimeMillis();
         for (int i = 0; i < count; i++) {
             end = System.currentTimeMillis();
-            operations.add(Sample.just(key).put(end, 1));
+            operations.add(Sample.just(key).put(end, 1),
+                    new TimeSeriesOptions()
+                            .retention(2*24*60*60*1000)
+                            .compressed(true)
+                            .chunkSize(4096)
+                            .duplicatePolicy(DuplicatePolicy.SUM)
+                            .labels(Label.just("id_type", "1")));
         }
 
     }
 
     @Test
-    // todo 集群模式不支持
     public void mAdd() {
-        System.out.println("======================mAdd====================");
-        List<Sample> samples = new ArrayList<>(5);
-        for (int i = 0; i < 5; i++) {
-            long timestamp = System.currentTimeMillis();
-            start = i == 0 ? timestamp : start;
-            end = i == 4 ? timestamp : end;
-            System.out.println("{\"timestamp\":"+ timestamp +",\"value\":"+ (10 + i) +".0}");
-            samples.add(Sample.just(keys.get(i)).put(timestamp, 10 + i));
-        }
-        // operations.mAdd(samples.toArray(new Sample[]{}));
     }
 
     @Test
     public void incrby() throws Exception {
-        int count = 15000;
+        int count = 10;
         for (int i = 0; i < count; i++) {
             long timestamp = System.currentTimeMillis();
             start = i == 0 ? timestamp : start;
             end = timestamp;
-            operations.incrby(key, 1, timestamp);
+            operations.incrby(key+":sub", 1, timestamp, new TimeSeriesOptions()
+                    .retention(2*24*60*60*1000)
+                    .compressed(false)
+                    .chunkSize(4096)
+                    .labels(Label.just("id_type", "1"))
+            );
         }
 
         // range();
@@ -211,20 +217,19 @@ public class redisTest {
 
     @Test
     public void createRule() {
-        // todo 适配中
-        // operations.createRule(key, 12);
+        operations.createRule(key, key+":sub", Aggregation.COUNT, 1000);
     }
 
     @Test
     public void deleteRule() {
-        // todo 适配中
-        // operations.deleteRule(key, 12);
+        operations.deleteRule(key, key+":sub");
     }
 
     @Test
     public void range() {
         List<Value> resultList = operations
-                .range(key, 1637307524565L, 1637307542236L, new RangeOptions().aggregationType(Aggregation.SUM, 1000));
+                .range(key,
+                        new RangeOptions().aggregationType(Aggregation.COUNT, 1000));
         resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +"}"));
 
         System.out.println(resultList.stream().mapToDouble(Value::getValue).sum());
@@ -232,26 +237,47 @@ public class redisTest {
 
     @Test
     public void revRange() {
-        System.out.println("ts.revrange temperature:2:33 "+ start +" "+ end +" AGGREGATION range 5");
+
         List<Value> resultList = operations
-                .revRange(key, start, end, new RangeOptions().aggregationType(Aggregation.RANGE, 5));
+                .revRange(key, new RangeOptions()
+                        .tsFilters(1637651385435l, 1637651655361l)
+                        .vlsFilter(true)
+                        .count(5)
+                        .align(1)
+                        .aggregationType(Aggregation.COUNT, 1000));
+
         resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +"}"));
     }
 
     @Test
     public void mRange() {
-        // todo 适配中
-//        List<AggResult> resultList = operations
-//                .mRange(key, start, end, new RangeOptions().aggregationType(Aggregation.COUNT, 5));
-//        resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +".0}"));
+        List<TimeSeries> resultList = operations
+                .mRange(new RangeOptions()
+                        .tsFilters(1637651385435l, 1637651655361l)
+                        .vlsFilter(true)
+                        .withLabels()
+                        .count(5)
+                        .align(1)
+                        .aggregationType(Aggregation.COUNT, 5)
+                        .filters(Label.just("area", "350302"))
+                );
+        System.out.println(resultList);
+        // resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +".0}"));
     }
 
     @Test
     public void mRevRange() {
-        // todo 适配中
-//        List<AggResult> resultList = operations
-//                .mRange(key, start, end, new RangeOptions().aggregationType(Aggregation.COUNT, 5));
-//        resultList.forEach(v -> System.out.println("{\"timestamp\":"+ v.getTimestamp() +",\"value\":"+ v.getValue() +".0}"));
+        List<TimeSeries> resultList = operations
+                .mRevRange(new RangeOptions()
+                        .tsFilters(1637651385435l, 1637651655361l)
+                        .vlsFilter(true)
+                        .withLabels()
+                        .count(5)
+                        .align(1)
+                        .aggregationType(Aggregation.COUNT, 5)
+                        .filters(Label.just("area", "350302"))
+                );
+        System.out.println(resultList);
     }
 
     @Test
@@ -262,19 +288,20 @@ public class redisTest {
 
     @Test
     public void mGet() {
-        List<Sample> samples = operations.mGet(false, KeyValue.just("area", "350301"));
+        List<Sample> samples = operations.mGet(new RangeOptions()
+                .withLabels().filters(Label.just("area", "350302")));
         System.out.println(samples);
     }
 
     @Test
     public void info() {
-        Map info = operations.info(key);
+        Map info = operations.info(key, true);
         System.out.println(info);
     }
 
     @Test
     public void queryIndex() {
-        List info = operations.queryIndex(KeyValue.just("year", "2021"));
+        List info = operations.queryIndex(Label.just("area", "350302"));
         System.out.println(info);
     }
 

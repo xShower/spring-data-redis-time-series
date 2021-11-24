@@ -4,6 +4,7 @@ import io.lettuce.core.KeyValue;
 import org.springframework.data.redis.core.options.TimeSeriesOptions;
 import org.springframework.data.redis.core.options.RangeOptions;
 import org.springframework.data.redis.core.protocol.Aggregation;
+import org.springframework.data.redis.core.protocol.entity.Label;
 import org.springframework.data.redis.core.protocol.entity.Sample;
 import org.springframework.data.redis.core.protocol.entity.TimeSeries;
 import org.springframework.data.redis.core.protocol.entity.Value;
@@ -46,23 +47,45 @@ public interface TimeSeriesOperations<K, V> {
 
     void deleteRule(K sourceKey, K destKey);
 
+    List<Value> range(K key);
+
+    List<Value> range(K key, RangeOptions options);
+
     List<Value> range(K key, long from, long to);
 
     List<Value> range(K key, long from, long to, RangeOptions options);
+
+    List<Value> revRange(K key);
+
+    List<Value> revRange(K key, RangeOptions options);
 
     List<Value> revRange(K key, long from, long to);
 
     List<Value> revRange(K key, long from, long to, RangeOptions options);
 
-    void mRange(K key, long from, long to, Object[] options);
+    List<TimeSeries> mRange();
 
-    void mRevRange(K key, long from, long to, Object[] options);
+    List<TimeSeries> mRange(RangeOptions options);
+
+    List<TimeSeries> mRange(long from, long to);
+
+    List<TimeSeries> mRange(long from, long to, RangeOptions options);
+
+    List<TimeSeries> mRevRange();
+
+    List<TimeSeries> mRevRange(RangeOptions option);
+
+    List<TimeSeries> mRevRange(long from, long to);
+
+    List<TimeSeries> mRevRange(long from, long to, RangeOptions option);
 
     Sample get(K key);
 
-    List<TimeSeries> mGet(boolean withLabels, KeyValue ...filters);
+    List<TimeSeries> mGet(RangeOptions options);
 
     Map info(K key);
 
-    List queryIndex(KeyValue ...filters);
+    Map info(K key, boolean debug);
+
+    List queryIndex(Label...filters);
 }
