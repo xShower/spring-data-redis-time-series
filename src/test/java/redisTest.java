@@ -40,7 +40,7 @@ public class redisTest {
 
     private RedisTemplate<String, Object> template;
     private TimeSeriesOperations operations;
-    private static final String host = "47.111.95.99";
+    private static final String host = "47.111.95.91";
     private static final int port = 6389;
     private static final String password = "ylz#yhkj..2020";
     private static final String key = "temperature:x:32";
