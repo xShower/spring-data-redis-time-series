@@ -24,5 +24,6 @@ public enum Keywords {
     FILTER_BY_VALUE,
     REDUCE,
     ALIGN,
-    SELECTED_LABELS;
+    SELECTED_LABELS,
+    DEBUG;
 }

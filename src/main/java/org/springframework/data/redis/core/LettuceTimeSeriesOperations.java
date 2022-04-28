@@ -1,22 +1,17 @@
 package org.springframework.data.redis.core;
 
-import io.lettuce.core.RedisCommandExecutionException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.redis.core.decode.LabelDecoder;
-import org.springframework.data.redis.core.decode.SampleDecoder;
-import org.springframework.data.redis.core.decode.TimeSeriesDecoder;
 import org.springframework.data.redis.core.options.RangeOptions;
 import org.springframework.data.redis.core.options.TimeSeriesOptions;
 import org.springframework.data.redis.core.protocol.Aggregation;
 import org.springframework.data.redis.core.protocol.DuplicatePolicy;
 import org.springframework.data.redis.core.protocol.Keywords;
-import org.springframework.data.redis.core.protocol.entity.Label;
-import org.springframework.data.redis.core.protocol.entity.Sample;
-import org.springframework.data.redis.core.protocol.entity.TimeSeries;
-import org.springframework.data.redis.core.protocol.entity.Value;
+import org.springframework.data.redis.core.protocol.entity.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -27,18 +22,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOperations<K, V, TimeSeriesCommands> implements TimeSeriesOperations<K, V> {
 
-    private TimeSeriesDecoder timeSeriesDecoder;
-    private SampleDecoder sampleDecoder;
-
-
     public LettuceTimeSeriesOperations(RedisTemplate<K, V> template) {
         super(template);
-
-        sampleDecoder = new SampleDecoder(template);
-
-        timeSeriesDecoder = new TimeSeriesDecoder(template);
-        timeSeriesDecoder.setSampleDecoder(sampleDecoder);
-        timeSeriesDecoder.setLabelDecoder(new LabelDecoder(template));
     }
 
     @Override
@@ -50,19 +35,17 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.create(new String(rawKey), objects);
             return null;
-        }, true);
+        });
     }
 
     @Override
     public Long del(K key, long from, long to) {
-        /*byte[] rawKey = rawKey(key);
+        byte[] rawKey = rawKey(key);
 
         return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            commands.del(new String(rawKey), from, to);
-            return null;
-        }, true);*/
-        throw new UnsupportedOperationException("redis-timeseries_v.1.4版本不支持");
+            return commands.del(new String(rawKey), from < 0 ? "-" : from, to < 0 ? "+" : to);
+        });
     }
 
     @Override
@@ -73,81 +56,78 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.alter(new String(rawKey), objects);
             return null;
-        }, true);
+        });
     }
 
     @Override
-    public Long add(Sample sample) {
-        return add(sample, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
+    public Long add(KeyedValue keyedValue) {
+        return add(keyedValue, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
     }
 
     @Override
-    public Long add(Sample sample, TimeSeriesOptions options) {
-        byte[] rawKey = rawKey(sample.getKey());
+    public Long add(KeyedValue keyedValue, TimeSeriesOptions options) {
+        byte[] rawKey = rawKey(keyedValue.getKey());
         Object[] objects = Objects.isNull(options) ? new Object[]{} : options.add();
 
         return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            return commands.add(new String(rawKey), sample.getTimestamp(), sample.getValue(), objects);
-        }, true);
+            return commands.add(new String(rawKey), keyedValue.getTimestamp(), keyedValue.getValue(), objects);
+        });
     }
 
     @Override
-    public Object mAdd(Sample... samples) {
-        /*if (Objects.isNull(samples) || samples.length <= 0) return null;
+    public List<Long> mAdd(KeyedValue... keyedValues) {
+        if (Objects.isNull(keyedValues) || keyedValues.length <= 0) return null;
         List<Object> objects = new ArrayList<>();
-        for (Sample sample : samples) {
-            objects.add(rawKey(sample.getKey()));
-            objects.add(sample.getTimestamp());
-            objects.add(rawValue(sample.getValue()));
+        for (KeyedValue keyedValue : keyedValues) {
+            objects.add(rawKey(keyedValue.getKey()));
+            objects.add(keyedValue.getTimestamp());
+            objects.add(rawValue(keyedValue.getValue()));
         }
         return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.mAdd(objects.toArray());
-        }, true);*/
-        throw new UnsupportedOperationException("redis-timeseries_v.1.4版本不支持");
+        });
     }
 
     @Override
-    public void incrby(K key, V value) {
-        incrby(key, value, null);
+    public Long incrby(K key, V value) {
+        return incrby(key, value, null);
     }
 
     @Override
-    public void incrby(K key, V value, Long timestamp) {
-        incrby(key, value, timestamp, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
+    public Long incrby(K key, V value, Long timestamp) {
+        return incrby(key, value, timestamp, new TimeSeriesOptions().duplicatePolicy(DuplicatePolicy.SUM));
     }
 
     @Override
-    public void incrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
+    public Long incrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
         options.timestamp(timestamp);
         Object[] opts = options.incrby();
-        execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            commands.incrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
-            return null;
-        }, true);
+            return commands.incrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
+        });
     }
 
     @Override
-    public void decrby(K key, V value) {
-        decrby(key, value, null);
+    public Long decrby(K key, V value) {
+        return decrby(key, value, null);
     }
 
     @Override
-    public void decrby(K key, V value, Long timestamp) {
-        decrby(key, value, timestamp, new TimeSeriesOptions());
+    public Long decrby(K key, V value, Long timestamp) {
+        return decrby(key, value, timestamp, new TimeSeriesOptions());
     }
 
     @Override
-    public void decrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
+    public Long decrby(K key, V value, Long timestamp, TimeSeriesOptions options) {
         options.timestamp(timestamp);
         Object[] opts = options.incrby();
-        execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
-            commands.decrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
-            return null;
-        }, true);
+            return commands.decrby(new String(rawKey(key)), Double.parseDouble(value.toString()), opts);
+        });
     }
 
     @Override
@@ -161,7 +141,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.createRule(new String(rawKey(sourceKey)), new String(rawKey(destKey)), opts.toArray());
             return null;
-        }, true);
+        });
 
     }
 
@@ -171,7 +151,7 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             commands.deleteRule(new String(rawKey(sourceKey)), new String(rawKey(destKey)));
             return null;
-        }, true);
+        });
     }
 
     @Override
@@ -193,19 +173,10 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
     public List<Value> range(K key, long from, long to, RangeOptions options) {
         Object[] objects = Objects.isNull(options) ? new Object[]{} : options.range();
         String sKey = new String(rawKey(key));
-        List value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.range(sKey, from < 0 ? "-" : from, to < 0 ? "+" : to, objects);
-        }, true);
-
-        List<Value> result = new ArrayList<>();
-        if (!Objects.isNull(value) && !value.isEmpty()) {
-            for (Object v : value) {
-                result.add(sampleDecoder.decode(sKey, v));
-            }
-        }
-
-        return result;
+        });
     }
 
     @Override
@@ -227,114 +198,94 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
     public List<Value> revRange(K key, long from, long to, RangeOptions options) {
         String sKey = new String(rawKey(key));
         Object[] objects = Objects.isNull(options) ? new Object[]{} : options.range();
-        List value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.revRange(sKey, from < 0 ? "-" : from, to < 0 ? "+" : to, objects);
-        }, true);
-
-
-        List<Value> result = new ArrayList<>();
-        if (!Objects.isNull(value) && !value.isEmpty()) {
-            for (Object v : value) {
-                result.add(sampleDecoder.decode(sKey, v));
-            }
-        }
-
-        return result;
+        });
     }
 
     @Override
-    public List<TimeSeries> mRange() {
+    public List<Range> mRange() {
         return mRange(null);
     }
 
     @Override
-    public List<TimeSeries> mRange(RangeOptions options) {
+    public List<Range> mRange(RangeOptions options) {
         return mRange(-1, -1, options);
     }
 
     @Override
-    public List<TimeSeries> mRange(long from, long to) {
+    public List<Range> mRange(long from, long to) {
         return mRange(from, to, null);
     }
 
     @Override
-    public List<TimeSeries> mRange(long from, long to, RangeOptions options) {
+    public List<Range> mRange(long from, long to, RangeOptions options) {
         Object[] objects = Objects.isNull(options) ? new Object[]{} : options.mRange();
 
-        List value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.mRange(from < 0 ? "-" : from, to < 0 ? "+" : to, objects);
-        }, true);
-
-
-        return timeSeriesDecoder.decode(null, value);
+        });
     }
 
     @Override
-    public List<TimeSeries> mRevRange() {
+    public List<Range> mRevRange() {
         return mRevRange(null);
     }
 
     @Override
-    public List<TimeSeries> mRevRange(RangeOptions option) {
+    public List<Range> mRevRange(RangeOptions option) {
         return mRevRange(-1, -1, option);
     }
 
     @Override
-    public List<TimeSeries> mRevRange(long from, long to) {
+    public List<Range> mRevRange(long from, long to) {
         return mRevRange(from, to, null);
     }
 
     @Override
-    public List<TimeSeries> mRevRange(long from, long to, RangeOptions options) {
+    public List<Range> mRevRange(long from, long to, RangeOptions options) {
         Object[] objects = Objects.isNull(options) ? new Object[]{} : options.mRange();
 
-        List value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.mRevRange(from < 0 ? "-" : from, to < 0 ? "+" : to, objects);
-        }, true);
-
-
-        return timeSeriesDecoder.decode(null, value);
+        });
     }
 
     @Override
-    public Sample get(K key) {
+    public Value get(K key) {
         byte[] rawKey = rawKey(key);
-        List<Object> value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.get(new String(rawKey));
-        }, true);
-
-        return sampleDecoder.decode(new String(rawKey), value);
+        });
     }
 
     @Override
-    public List<TimeSeries> mGet(RangeOptions options) {
+    public Range mGet(RangeOptions options) {
         Object[] opts = options.mGet();
-        List<Object> value = execute(connection -> {
+        return execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.mGet(opts);
-        }, true);
-
-        return timeSeriesDecoder.decode(null, value);
+        });
     }
 
     @Override
-    public Map info(K key) {
+    public Info info(K key) {
         return info(key, false);
     }
 
     @Override
-    public Map info(K key, boolean debug) {
+    public Info info(K key, boolean debug) {
         byte[] rawKey = rawKey(key);
         return execute(connection -> {
-            Object[] objects = debug ? new Object[]{"DEBUG"} : new Object[]{};
+            Object[] objects = debug ? new Object[]{Keywords.DEBUG.name()} : new Object[]{};
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.info(new String(rawKey), objects);
 
-        }, true);
+        });
     }
 
     @Override
@@ -349,8 +300,10 @@ public class LettuceTimeSeriesOperations<K, V> extends LettuceCommandsAbstractOp
         List value = execute(connection -> {
             TimeSeriesCommands commands = getCommands(connection, TimeSeriesCommands.class);
             return commands.queryIndex(opts.toArray());
-        }, true);
+        });
 
-        return (List) value.stream().map(o -> new String((byte[]) o)).collect(Collectors.toList());
+        return (List) value.stream()
+                .map(o -> deserializeString((byte[]) o))
+                .collect(Collectors.toList());
     }
 }

@@ -1,5 +1,7 @@
 package org.springframework.data.redis.core.protocol.entity;
 
+import lombok.Data;
+
 import java.util.List;
 
 /**
@@ -7,22 +9,23 @@ import java.util.List;
  * @Date: 2021/11/17
  * @Description:
  */
-public class TimeSeries {
+@Data
+public class Range {
     private String key;
     private List<Label> labels;
-    private List<Value> results;
+    private List<Value> values;
 
-    public TimeSeries(String key) {
+    public Range(String key) {
         this.key = key;
     }
 
-    public TimeSeries labels(List<Label> labels) {
+    public Range labels(List<Label> labels) {
         this.labels = labels;
         return this;
     }
 
-    public TimeSeries results(List<Value> results) {
-        this.results = results;
+    public Range results(List<Value> values) {
+        this.values = values;
         return this;
     }
 
@@ -34,7 +37,7 @@ public class TimeSeries {
         return this.labels;
     }
 
-    public List<Value> getResults() {
-        return this.results;
+    public List<Value> getValues() {
+        return this.values;
     }
 }

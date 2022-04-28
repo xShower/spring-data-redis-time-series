@@ -1,13 +1,9 @@
 package org.springframework.data.redis.core;
 
-import io.lettuce.core.KeyValue;
 import org.springframework.data.redis.core.options.TimeSeriesOptions;
 import org.springframework.data.redis.core.options.RangeOptions;
 import org.springframework.data.redis.core.protocol.Aggregation;
-import org.springframework.data.redis.core.protocol.entity.Label;
-import org.springframework.data.redis.core.protocol.entity.Sample;
-import org.springframework.data.redis.core.protocol.entity.TimeSeries;
-import org.springframework.data.redis.core.protocol.entity.Value;
+import org.springframework.data.redis.core.protocol.entity.*;
 
 import java.util.List;
 import java.util.Map;
@@ -25,23 +21,23 @@ public interface TimeSeriesOperations<K, V> {
 
     void alter(K key, TimeSeriesOptions options);
 
-    Long add(Sample sample);
+    Long add(KeyedValue keyedValue);
 
-    Long add(Sample sample, TimeSeriesOptions options);
+    Long add(KeyedValue keyedValue, TimeSeriesOptions options);
 
-    Object mAdd(Sample...sample);
+    List<Long> mAdd(KeyedValue...keyedValues);
 
-    void incrby(K key, V value);
+    Long incrby(K key, V value);
 
-    void incrby(K key, V value, Long timestamp);
+    Long incrby(K key, V value, Long timestamp);
 
-    void incrby(K key, V value, Long timestamp, TimeSeriesOptions options);
+    Long incrby(K key, V value, Long timestamp, TimeSeriesOptions options);
 
-    void decrby(K key, V value);
+    Long decrby(K key, V value);
 
-    void decrby(K key, V value, Long timestamp);
+    Long decrby(K key, V value, Long timestamp);
 
-    void decrby(K key, V value, Long timestamp, TimeSeriesOptions options);
+    Long decrby(K key, V value, Long timestamp, TimeSeriesOptions options);
 
     void createRule(K sourceKey, K destKey, Aggregation aggregationType, long timeBucket);
 
@@ -63,29 +59,29 @@ public interface TimeSeriesOperations<K, V> {
 
     List<Value> revRange(K key, long from, long to, RangeOptions options);
 
-    List<TimeSeries> mRange();
+    List<Range> mRange();
 
-    List<TimeSeries> mRange(RangeOptions options);
+    List<Range> mRange(RangeOptions options);
 
-    List<TimeSeries> mRange(long from, long to);
+    List<Range> mRange(long from, long to);
 
-    List<TimeSeries> mRange(long from, long to, RangeOptions options);
+    List<Range> mRange(long from, long to, RangeOptions options);
 
-    List<TimeSeries> mRevRange();
+    List<Range> mRevRange();
 
-    List<TimeSeries> mRevRange(RangeOptions option);
+    List<Range> mRevRange(RangeOptions option);
 
-    List<TimeSeries> mRevRange(long from, long to);
+    List<Range> mRevRange(long from, long to);
 
-    List<TimeSeries> mRevRange(long from, long to, RangeOptions option);
+    List<Range> mRevRange(long from, long to, RangeOptions option);
 
-    Sample get(K key);
+    Value get(K key);
 
-    List<TimeSeries> mGet(RangeOptions options);
+    Range mGet(RangeOptions options);
 
-    Map info(K key);
+    Info info(K key);
 
-    Map info(K key, boolean debug);
+    Info info(K key, boolean debug);
 
     List queryIndex(Label...filters);
 }

@@ -2,6 +2,9 @@ package org.springframework.data.redis.core;
 
 import io.lettuce.core.dynamic.Commands;
 import io.lettuce.core.dynamic.annotation.Command;
+import org.springframework.data.redis.core.protocol.entity.Info;
+import org.springframework.data.redis.core.protocol.entity.Range;
+import org.springframework.data.redis.core.protocol.entity.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -16,8 +19,8 @@ public interface TimeSeriesCommands extends Commands {
     @Command("TS.CREATE")
     void create(String key, Object[] options);
 
-    //@Command("TS.DEL")
-    //void del(String key, long fromTimestamp, long toTimestamp);
+    @Command("TS.DEL")
+    Long del(String key, Object fromTimestamp, Object toTimestamp);
 
     @Command("TS.ALTER")
     void alter(String key, Object[] options);
@@ -26,13 +29,13 @@ public interface TimeSeriesCommands extends Commands {
     Long add(String key, Long timestamp, Double value, Object[] options);
 
     @Command("TS.MADD")
-    Long mAdd(Object[] item);
+    List<Long> mAdd(Object[] item);
 
     @Command("TS.INCRBY")
-    void incrby(String key, Double value, Object[] options);
+    Long incrby(String key, Double value, Object[] options);
 
     @Command("TS.DECRBY")
-    void decrby(String key, Double value, Object[] options);
+    Long decrby(String key, Double value, Object[] options);
 
     @Command("TS.CREATERULE")
     void createRule(String sourceKey, String destKey, Object[] options);
@@ -41,25 +44,25 @@ public interface TimeSeriesCommands extends Commands {
     void deleteRule(String sourceKey, String destKey);
 
     @Command("TS.RANGE")
-    List<Object> range(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
+    List<Value> range(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.REVRANGE")
-    List<Object> revRange(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
+    List<Value> revRange(String key, Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.MRANGE")
-    List<Object> mRange(Object fromTimestamp, Object toTimestamp, Object[] options);
+    List<Range> mRange(Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.MREVRANGE")
-    List<Object> mRevRange(Object fromTimestamp, Object toTimestamp, Object[] options);
+    List<Range> mRevRange(Object fromTimestamp, Object toTimestamp, Object[] options);
 
     @Command("TS.GET")
-    List<Object> get(String key);
+    Value get(String key);
 
     @Command("TS.MGET")
-    List<Object> mGet(Object[] options);
+    Range mGet(Object[] options);
 
     @Command("TS.INFO")
-    Map info(String key, Object[] options);
+    Info info(String key, Object[] options);
 
     @Command("TS.QUERYINDEX")
     List<Object> queryIndex(Object[] options);

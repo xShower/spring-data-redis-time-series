@@ -5,23 +5,23 @@ package org.springframework.data.redis.core.protocol.entity;
  * @Date: 2021/11/18
  * @Description:
  */
-public class Sample extends Value {
+public class KeyedValue extends Value {
 
     private final String key;
 
-    private Sample() {
+    private KeyedValue() {
         this.key = null;
     }
 
-    private Sample(String key) {
+    private KeyedValue(String key) {
         this.key = key;
     }
 
-    public static Sample just(String key) {
-        return new Sample(key);
+    public static KeyedValue just(String key) {
+        return new KeyedValue(key);
     }
 
-    public Sample put(long timestamp, double value) {
+    public KeyedValue put(long timestamp, double value) {
         super.put(timestamp, value);
         return this;
     }

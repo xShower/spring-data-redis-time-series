@@ -1,15 +1,18 @@
 package org.springframework.data.redis.core.protocol.entity;
 
+import lombok.Data;
+
 /**
  * @Auther: syh
  * @Date: 2021/11/17
  * @Description:
  */
+@Data
 public class Value {
     private long timestamp;
     private double value;
 
-    protected Value() {
+    public Value() {
     }
 
     protected Value(Long timestamp, double value) {

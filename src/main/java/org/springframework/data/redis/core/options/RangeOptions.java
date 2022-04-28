@@ -1,7 +1,9 @@
 package org.springframework.data.redis.core.options;
 
+import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode;
 import org.springframework.data.redis.core.protocol.Aggregation;
 import org.springframework.data.redis.core.protocol.Keywords;
+import org.springframework.data.redis.core.protocol.Reduce;
 import org.springframework.data.redis.core.protocol.entity.Label;
 import org.springframework.util.StringUtils;
 
@@ -25,6 +27,7 @@ public class RangeOptions {
     private String[] labels;
     private Label[] filters;
     private String groupBy;
+    private Reduce reduce;
 
     public RangeOptions() {
     }
@@ -75,8 +78,9 @@ public class RangeOptions {
         return this;
     }
 
-    public RangeOptions groupBy(String label) {
+    public RangeOptions groupBy(String label, Reduce reduce) {
         this.groupBy = label;
+        this.reduce = reduce;
         return this;
     }
 
@@ -159,16 +163,10 @@ public class RangeOptions {
         if (!StringUtils.isEmpty(groupBy)) {
             options.add(Keywords.GROUPBY.name());
             options.add(groupBy);
-        }
-
-        if (!StringUtils.isEmpty(groupBy)) {
-            options.add(Keywords.GROUPBY.name());
-            options.add(groupBy);
-        }
-
-        if (false) {
             options.add(Keywords.REDUCE.name());
+            options.add(reduce.getKey());
         }
+
         return options.toArray();
     }
 

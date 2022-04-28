@@ -5,7 +5,12 @@ import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.cluster.api.async.RedisAdvancedClusterAsyncCommands;
 import io.lettuce.core.dynamic.Commands;
 import io.lettuce.core.dynamic.RedisCommandFactory;
+import io.lettuce.core.dynamic.output.CommandOutputFactoryResolver;
+import io.lettuce.core.dynamic.output.OutputRegistry;
+import io.lettuce.core.dynamic.output.OutputRegistryCommandOutputFactoryResolver;
+import io.lettuce.core.output.IntegerListOutput;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.protocol.output.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,10 +33,22 @@ public class LettuceCommandsAbstractOperations<K,V,C extends Commands> extends A
         C commands = cached.computeIfAbsent(System.identityHashCode(nativeConnection), integer -> {
             StatefulConnection statefulConnection = getStatefulConnection(nativeConnection);
             RedisCommandFactory redisCommandFactory = new RedisCommandFactory(statefulConnection);
+            redisCommandFactory.setCommandOutputFactoryResolver(commandOutputFactoryResolver());
             return redisCommandFactory.getCommands(clazz);
         });
 
         return commands;
+    }
+
+    private CommandOutputFactoryResolver commandOutputFactoryResolver() {
+        OutputRegistry outputRegistry = new OutputRegistry();
+        outputRegistry.register(ListValueOutput.class, ListValueOutput::new);
+        outputRegistry.register(ValueOutput.class, ValueOutput::new);
+        outputRegistry.register(IntegerListOutput.class, IntegerListOutput::new);
+        outputRegistry.register(RangeOutput.class, RangeOutput::new);
+        outputRegistry.register(ListRangeOutput.class, ListRangeOutput::new);
+        outputRegistry.register(InfoOutput.class, InfoOutput::new);
+        return new OutputRegistryCommandOutputFactoryResolver(outputRegistry);
     }
 
     private StatefulConnection getStatefulConnection(Object nativeConnection){
